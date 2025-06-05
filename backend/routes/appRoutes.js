@@ -1,11 +1,16 @@
-import express from 'express'
+import express from "express";
+import {
+  createUser,
+  createNote,
+  getNotesByUser,
+  loginUser,
+} from "../controllers/appControllers.js";
 
-const router = express.Router()
+const router = express.Router();
 
-router.get('/', getNotesOfUser)
-router.get('/:id', getNote)
-router.post('/', createNote)
-router.put('/:id', updateNote)
-router.delete('/:id', deleteNote)
+router.post("/users", createUser);
+router.post("/notes", createNote);
+router.get("/notes/user/:userId", getNotesByUser);  // param renamed to userId
+router.post("/login", loginUser);
 
-export default router
+export default router;

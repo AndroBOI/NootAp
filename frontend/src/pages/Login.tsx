@@ -2,16 +2,14 @@ import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import {
-  Link, useNavigate
-} from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import axios from 'axios'
+import {toast, Toaster} from 'react-hot-toast'
 type Errors = {
   email?: string,
   password?: string
 }
-
 
 export default function Login() {
   const navigate = useNavigate()
@@ -23,7 +21,6 @@ export default function Login() {
   const [errors, setErrors] = useState<Errors>({})
   const [showPassword, setShowPassword] = useState(false)
 
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
     setErrors(prev => ({ ...prev, [e.target.name]: undefined }))
@@ -32,7 +29,6 @@ export default function Login() {
   const togglePassword = () => {
     setShowPassword(!showPassword)
   }
-
 
   const check = () => {
     const newErrors: Errors = {}
@@ -52,24 +48,29 @@ export default function Login() {
     if (!check()) return
 
     try {
-      const response = await axios.post('http://localhost:5000/app/login', formData);
-      const userId = response.data.user._id;
+      const response = await axios.post('http://localhost:5000/app/login', formData)
+      const { token, user } = response.data
       if (response.status === 200) {
-        alert('Login successful!');
-        navigate('/dashboard', { state: { userId } });
+        // Save token for future requests
+        localStorage.setItem('token', token)
+        toast.success('Login successful!')
+
+        // Pass both userId and token to dashboard
+        navigate('/dashboard', { state: { userId: user._id, token } })
       }
     } catch (error: any) {
       if (error.response) {
-        setErrors({ password: error.response.data.message });
+        setErrors({ password: error.response.data.message })
       } else {
-        alert('Server error or network issue.');
+        toast.error('Server error or network issue.')
       }
-      console.error('Login error:', error);
+      console.error('Login error:', error)
     }
   }
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-background">
+       <Toaster position="top-right" reverseOrder={false} />
       <div className="max-w-md w-full p-6 border rounded-2xl shadow-md bg-white dark:bg-gray-900">
         <h2 className="text-2xl font-semibold mb-6 text-center">Login</h2>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -77,12 +78,18 @@ export default function Login() {
           {/* Email Field */}
           <div className="flex flex-col space-y-2">
             <Label htmlFor="email" className="mb-5">Email</Label>
-            <Input className={errors.email ? 'border-red-500 focus:ring-red-500' : ''} type="email" id="email" name="email" value={formData.email} onChange={handleChange} />
+            <Input
+              className={errors.email ? 'border-red-500 focus:ring-red-500' : ''}
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+            />
           </div>
           {errors.email && <p className="text-red-600 text-xs mt-5">{errors.email}</p>}
 
           {/* Password Field */}
-
           <div className="flex flex-col space-y-2">
             <Label htmlFor="password" className="mb-2">Password</Label>
             <div className="relative">
@@ -115,7 +122,7 @@ export default function Login() {
               to="/"
               className="text-sm text-muted-foreground hover:text-primary transition-colors"
             >
-              Dont have an account? Register
+              Don't have an account? Register
             </Link>
           </div>
         </form>

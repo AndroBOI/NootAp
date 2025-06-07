@@ -1,23 +1,37 @@
 import User from "../models/User.js";
 import Note from "../models/Note.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+dotenv.config();
 
-// Create a new user
+
+const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_here"; // Use 
+
+
 export const createUser = async (req, res) => {
   const { name, email, password } = req.body;
   try {
     let user = await User.findOne({ email });
     if (user) return res.status(409).json({ message: "User already exists" });
 
-    user = await User.create({ name, email, password });
-    console.log(user);
-    res.status(201).json(user);
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    user = await User.create({ name, email, password: hashedPassword });
+    res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+    });
   } catch (err) {
     console.error("Error creating user:", err);
     res.status(500).json({ error: err.message });
   }
 };
 
-// Create a new note for a user
+
 export const createNote = async (req, res) => {
   const { title, body, userId } = req.body;
   try {
@@ -32,10 +46,9 @@ export const createNote = async (req, res) => {
   }
 };
 
-// Get all notes for a user
 export const getNotesByUser = async (req, res) => {
   try {
-    const { userId } = req.params; // matches router param
+    const { userId } = req.params;
     const notes = await Note.find({ userId });
     res.json(notes);
   } catch (err) {
@@ -44,19 +57,33 @@ export const getNotesByUser = async (req, res) => {
   }
 };
 
-// Login a user
+
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
     const user = await User.findOne({ email });
-    if (!user || user.password !== password) {
+    if (!user) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
+
+    // Compare hashed password
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    // Create JWT token
+    const token = jwt.sign(
+      { userId: user._id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
     const notes = await Note.find({ userId: user._id });
 
     res.json({
+      token, 
       user: {
         _id: user._id,
         name: user.name,

@@ -69,8 +69,7 @@ export default function Register() {
         }
 
         // Navigate with user ID from response
-        navigate('/dashboard', { state: { userId: response.data._id } })
-
+        navigate('/dashboard', { state: { userId: response.data.user._id } })
         setFormData({
           name: "",
           email: "",
